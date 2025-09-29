@@ -192,13 +192,14 @@ int nms_cpu(
 {
     std::sort(bndboxes.begin(), bndboxes.end(),
               [](Bndbox boxes1, Bndbox boxes2) { return boxes1.score > boxes2.score; });
-    std::vector<int> suppressed(std::min(int(bndboxes.size()), pre_nms_top_n), 0);
-    for (size_t i = 0; i < std::min(int(bndboxes.size()), pre_nms_top_n); i++) {
+    int max_items = std::min(int(bndboxes.size()), pre_nms_top_n);
+    std::vector<int> suppressed(max_items, 0);
+    for (int i = 0; i < max_items; i++) {
         if (suppressed[i] == 1) {
             continue;
         }
         nms_pred.emplace_back(bndboxes[i]);
-        for (size_t j = i + 1; j < std::min(int(bndboxes.size()), pre_nms_top_n); j++) {
+        for (int j = i + 1; j < max_items; j++) {
             if (suppressed[j] == 1) {
                 continue;
             }

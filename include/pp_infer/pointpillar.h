@@ -21,7 +21,6 @@
 #include <memory>
 #include "cuda_runtime.h"
 #include "NvInfer.h"
-#include "NvOnnxConfig.h"
 #include "NvOnnxParser.h"
 #include "NvInferRuntime.h"
 #include "postprocess.h"

@@ -74,9 +74,23 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
     -Xlinker -L/usr/${ARCH}-linux-gnu/lib/
 )
 
-set(TENSORRT_INCLUDE_DIRS ~/TensorRT/include/)
-set(TENSORRT_ONNX_INCLUDE_DIRS ~/TensorRT/parsers/onnx/)
-set(TENSORRT_LIBRARY_DIRS  ~/TensorRT-8.6/lib/)
+# Use pkg-config to find TensorRT if available, otherwise fall back to standard paths
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(TENSORRT QUIET tensorrt)
+endif()
+
+if(TENSORRT_FOUND)
+    set(TENSORRT_INCLUDE_DIRS ${TENSORRT_INCLUDE_DIRS})
+    set(TENSORRT_LIBRARY_DIRS ${TENSORRT_LIBRARY_DIRS})
+else()
+    # Fall back to standard system paths
+    set(TENSORRT_INCLUDE_DIRS /usr/include/x86_64-linux-gnu/ /usr/local/include/)
+    set(TENSORRT_LIBRARY_DIRS /usr/lib/x86_64-linux-gnu/ /usr/local/lib/)
+endif()
+
+# ONNX parser is typically in the same location as TensorRT
+set(TENSORRT_ONNX_INCLUDE_DIRS ${TENSORRT_INCLUDE_DIRS})
 
 include_directories(
     ${CUDA_INCLUDE_DIRS}
