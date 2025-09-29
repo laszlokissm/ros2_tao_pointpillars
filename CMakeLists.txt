@@ -24,9 +24,9 @@ if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
 endif()
 
-# Default to C++14
+# Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -42,16 +42,18 @@ find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(message_filters REQUIRED)
 find_package(PCL REQUIRED)
 find_package(CUDA REQUIRED)
 
-set(CUDA_VERSION 11.3)
+set(CUDA_VERSION 11.8)
 set(CUDA_TOOLKIT_ROOT_DIR /usr/local/cuda-${CUDA_VERSION})
 
 SET(CMAKE_BUILD_TYPE "Release")
 add_compile_options(-W)
-add_compile_options(-std=c++11)
+add_compile_options(-std=c++17)
 
 set(SMS 50 52 53 60 61 62 70 72 75 80 86)
 foreach(sm ${SMS})
@@ -71,12 +73,14 @@ set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
     -Xlinker -L/usr/${ARCH}-linux-gnu/lib/
 )
 
-set(TENSORRT_INCLUDE_DIRS /usr/include/${ARCH}-linux-gnu/)
-set(TENSORRT_LIBRARY_DIRS /usr/lib/${ARCH}-linux-gnu/)
+set(TENSORRT_INCLUDE_DIRS ~/TensorRT/include/)
+set(TENSORRT_ONNX_INCLUDE_DIRS ~/TensorRT/parsers/onnx/)
+set(TENSORRT_LIBRARY_DIRS  ~/TensorRT-8.6/lib/)
 
 include_directories(
     ${CUDA_INCLUDE_DIRS}
     ${TENSORRT_INCLUDE_DIRS}
+    ${TENSORRT_ONNX_INCLUDE_DIRS}
     ../include/
 )
 
@@ -93,7 +97,7 @@ file(GLOB_RECURSE SOURCE_FILES
 
 
 cuda_add_executable(${PROJECT_NAME} src/pp_inference_node.cpp ${SOURCE_FILES})
-ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs sensor_msgs vision_msgs geometry_msgs PCL CUDA)
+ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs vision_msgs geometry_msgs sensor_msgs message_filters tf2_geometry_msgs tf2_ros pcl_conversions PCL CUDA)
 
 target_link_libraries(${PROJECT_NAME}
     libnvinfer.so

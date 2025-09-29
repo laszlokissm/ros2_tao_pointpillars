@@ -92,7 +92,7 @@ class PointPillar {
     ~PointPillar(void);
     int getPointSize();
     std::vector<Bndbox> doinfer(
-      void*points_data,
+      void* points_data,
       unsigned int* points_size,
       std::vector<Bndbox> &nms_pred,
       float nms_iou_thresh,

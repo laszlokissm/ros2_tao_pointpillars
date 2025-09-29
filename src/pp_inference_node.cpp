@@ -94,10 +94,13 @@ public:
     cudaStream_t stream = NULL;
     pointpillar = new PointPillar(model_path, engine_path, stream, data_type);
 
-    publisher_ = this->create_publisher<vision_msgs::msg::Detection3DArray>("bbox", 700);
+    publisher_ = this->create_publisher<vision_msgs::msg::Detection3DArray>("bbox", 1);
+
+    //QoS: sensor profile
+    static const rclcpp::QoS sensor_qos_profile = rclcpp::QoS(5).best_effort().durability_volatile();
 
     subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      "/point_cloud", 700, std::bind(&MinimalPublisher::topic_callback, this, _1));
+      "/point_cloud", sensor_qos_profile, std::bind(&MinimalPublisher::topic_callback, this, _1));
 
   }
 
@@ -196,8 +199,8 @@ private:
 
         detection.bbox.center.orientation = orientation;
 
-        hyp.id = std::to_string(nms_pred[i].id);
-        hyp.score = nms_pred[i].score;
+        hyp.hypothesis.class_id = std::to_string(nms_pred[i].id);
+        hyp.hypothesis.score = nms_pred[i].score;
         
         detection.header = msg->header;
         
