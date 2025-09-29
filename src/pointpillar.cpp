@@ -23,7 +23,9 @@
 #include<algorithm>
 #include "cuda_runtime.h"
 #include "NvInfer.h"
+#ifdef HAVE_ONNX_PARSER
 #include "NvOnnxParser.h"
+#endif
 #include "NvInferRuntime.h"
 #include "NvInferPlugin.h"
 #include "../include/pp_infer/pointpillar.h"
@@ -150,6 +152,7 @@ TRT::TRT(
   checkCudaErrors(cudaEventCreate(&stop));
   if (!trtCache.is_open())
   {
+#ifdef HAVE_ONNX_PARSER
     std::cout << "Loading Model: " << modelFile << std::endl;
     std::cout << "Building TRT engine from the model."<<std::endl;
     // define builder
@@ -218,6 +221,11 @@ TRT::TRT(
     parser->destroy();
     network->destroy();
     builder->destroy();
+#else
+    std::cerr << "Error: ONNX parser not available and no cached engine found at: " << modelCache << std::endl;
+    std::cerr << "Please provide a pre-built TensorRT engine file or build with ONNX parser support." << std::endl;
+    exit(-1);
+#endif
   } else {
     std::cout << "Loading existing TRT Engine: "
               << modelCache

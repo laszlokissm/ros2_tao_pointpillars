@@ -92,6 +92,22 @@ endif()
 # ONNX parser is typically in the same location as TensorRT
 set(TENSORRT_ONNX_INCLUDE_DIRS ${TENSORRT_INCLUDE_DIRS})
 
+# Check if ONNX parser headers are available
+find_path(ONNX_PARSER_INCLUDE_DIR NvOnnxParser.h
+    HINTS ${TENSORRT_INCLUDE_DIRS} ${TENSORRT_ONNX_INCLUDE_DIRS}
+    PATH_SUFFIXES include
+)
+
+if(ONNX_PARSER_INCLUDE_DIR)
+    message(STATUS "Found ONNX Parser headers: ${ONNX_PARSER_INCLUDE_DIR}")
+    add_definitions(-DHAVE_ONNX_PARSER)
+    set(HAVE_ONNX_PARSER ON)
+else()
+    message(WARNING "ONNX Parser headers not found. Building without ONNX parsing support.")
+    message(WARNING "You will need to provide pre-built TensorRT engine files.")
+    set(HAVE_ONNX_PARSER OFF)
+endif()
+
 include_directories(
     ${CUDA_INCLUDE_DIRS}
     ${TENSORRT_INCLUDE_DIRS}
@@ -114,11 +130,15 @@ file(GLOB_RECURSE SOURCE_FILES
 cuda_add_executable(${PROJECT_NAME} src/pp_inference_node.cpp ${SOURCE_FILES})
 ament_target_dependencies(${PROJECT_NAME} rclcpp std_msgs vision_msgs geometry_msgs sensor_msgs message_filters tf2_geometry_msgs tf2_ros pcl_conversions PCL CUDA)
 
-target_link_libraries(${PROJECT_NAME}
-    libnvinfer.so
-    libnvonnxparser.so
-    libnvinfer_plugin.so
-)
+# Base TensorRT libraries
+set(TENSORRT_LIBS libnvinfer.so libnvinfer_plugin.so)
+
+# Conditionally add ONNX parser library
+if(HAVE_ONNX_PARSER)
+    list(APPEND TENSORRT_LIBS libnvonnxparser.so)
+endif()
+
+target_link_libraries(${PROJECT_NAME} ${TENSORRT_LIBS})
 
 install(TARGETS
 	${PROJECT_NAME}
