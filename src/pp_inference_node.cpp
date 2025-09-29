@@ -45,7 +45,7 @@
 #include "pcl_conversions/pcl_conversions.h"
 #include "sensor_msgs/point_cloud2_iterator.hpp"
 #include <tf2/LinearMath/Quaternion.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 
 using std::placeholders::_1;
@@ -73,7 +73,7 @@ public:
   MinimalPublisher()
   : Node("minimal_publisher")
   {
-    this->declare_parameter("class_names");
+    this->declare_parameter<std::vector<std::string>>("class_names", std::vector<std::string>{"Vehicle", "Pedestrian", "Cyclist"});
     this->declare_parameter<float>("nms_iou_thresh", 0.01);
     this->declare_parameter<int>("pre_nms_top_n", 4096);
     this->declare_parameter<std::string>("model_path", "");
@@ -135,8 +135,6 @@ private:
     pcl::PointCloud<pcl::PointXYZI>::Ptr pcl_cloud(new pcl::PointCloud<pcl::PointXYZI>);
     pcl::fromROSMsg(*msg, *pcl_cloud);
 
-      unsigned int num_point_values = pcl_cloud->size();
-
       unsigned int points_size = pcl_cloud->points.size();
 
       std::vector<float> pcl_data;
@@ -177,7 +175,7 @@ private:
 
       auto pc_detection_arr = std::make_shared<vision_msgs::msg::Detection3DArray>();
       std::vector<vision_msgs::msg::Detection3D> detections;
-      for(int i=0; i<nms_pred.size(); i++) {
+      for(size_t i=0; i<nms_pred.size(); i++) {
         vision_msgs::msg::Detection3D detection;
         detection.results.resize(1); 
         vision_msgs::msg::ObjectHypothesisWithPose hyp;

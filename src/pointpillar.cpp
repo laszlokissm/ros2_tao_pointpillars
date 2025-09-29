@@ -133,8 +133,8 @@ private:
 
 TRT::~TRT(void)
 {
-  context->destroy();
-  engine->destroy();
+  delete context;
+  delete engine;
   checkCudaErrors(cudaEventDestroy(start));
   checkCudaErrors(cudaEventDestroy(stop));
 }
@@ -146,6 +146,10 @@ TRT::TRT(
   const std::string& data_type
 ):stream_(stream)
 {
+  // Mark unused parameters to avoid warnings when ONNX parser is not available
+  (void)modelFile;
+  (void)data_type;
+  
   initLibNvInferPlugins(&gLogger_, "");
   std::fstream trtCache(modelCache, std::ifstream::in);
   checkCudaErrors(cudaEventCreate(&start));
@@ -248,7 +252,7 @@ TRT::TRT(
         std::cerr << ": runtime null!" << std::endl;
         exit(-1);
     }
-    engine = (runtime->deserializeCudaEngine(data, length, 0));
+    engine = (runtime->deserializeCudaEngine(data, length));
     if (engine == nullptr) {
         std::cerr << ": engine null!" << std::endl;
         exit(-1);
@@ -267,7 +271,14 @@ int TRT::doinfer(void**buffers, bool do_profile)
   SimpleProfiler profiler("perf");
   if(do_profile)
       context->setProfiler(&profiler);
-  status = context->enqueueV2(buffers, stream_, &start);
+      
+  // Set input and output tensor addresses for newer TensorRT API
+  for (int i = 0; i < engine->getNbIOTensors(); ++i) {
+      const char* tensor_name = engine->getIOTensorName(i);
+      context->setTensorAddress(tensor_name, buffers[i]);
+  }
+  
+  status = context->enqueueV3(stream_);
   if(do_profile)
       std::cout << profiler;
   if (!status)
@@ -279,11 +290,11 @@ int TRT::doinfer(void**buffers, bool do_profile)
 
 nvinfer1::Dims TRT::get_binding_shape(int index)
 {
-  return context->getBindingDimensions(index);
+  return engine->getTensorShape(engine->getIOTensorName(index));
 }
 
 int TRT::getPointSize() {
-    return context->getBindingDimensions(0).d[2];
+    return engine->getTensorShape(engine->getIOTensorName(0)).d[2];
 }
 
 PointPillar::PointPillar(
@@ -330,6 +341,9 @@ std::vector<Bndbox> PointPillar::doinfer(
   bool do_profile
 )
 {
+  // Suppress unused parameter warning
+  (void)class_names;
+  
 #if PERFORMANCE_LOG
   float doinferTime = 0.0f;
   cudaEventRecord(start, stream_);
