@@ -98,12 +98,23 @@ find_path(ONNX_PARSER_INCLUDE_DIR NvOnnxParser.h
     PATH_SUFFIXES include
 )
 
-if(ONNX_PARSER_INCLUDE_DIR)
+# Check if ONNX parser library is available
+find_library(ONNX_PARSER_LIB nvonnxparser
+    HINTS ${TENSORRT_LIBRARY_DIRS}
+    PATH_SUFFIXES lib lib64
+)
+
+if(ONNX_PARSER_INCLUDE_DIR AND ONNX_PARSER_LIB)
     message(STATUS "Found ONNX Parser headers: ${ONNX_PARSER_INCLUDE_DIR}")
+    message(STATUS "Found ONNX Parser library: ${ONNX_PARSER_LIB}")
     add_definitions(-DHAVE_ONNX_PARSER)
     set(HAVE_ONNX_PARSER ON)
 else()
-    message(WARNING "ONNX Parser headers not found. Building without ONNX parsing support.")
+    if(ONNX_PARSER_INCLUDE_DIR AND NOT ONNX_PARSER_LIB)
+        message(WARNING "ONNX Parser headers found but library missing. Building without ONNX parsing support.")
+    else()
+        message(WARNING "ONNX Parser headers not found. Building without ONNX parsing support.")
+    endif()
     message(WARNING "You will need to provide pre-built TensorRT engine files.")
     set(HAVE_ONNX_PARSER OFF)
 endif()
@@ -135,7 +146,7 @@ set(TENSORRT_LIBS libnvinfer.so libnvinfer_plugin.so)
 
 # Conditionally add ONNX parser library
 if(HAVE_ONNX_PARSER)
-    list(APPEND TENSORRT_LIBS libnvonnxparser.so)
+    list(APPEND TENSORRT_LIBS ${ONNX_PARSER_LIB})
 endif()
 
 target_link_libraries(${PROJECT_NAME} ${TENSORRT_LIBS})
