@@ -27,7 +27,7 @@ def generate_launch_description():
                 'pre_nms_top_n': 4096,
                 'class_names': ['Vehicle', 'Pedestrian', 'Cyclist'],
                 'model_path': '', 
-                'engine_path': '/home/nvidia/Projects/PointPillars/trt.fp16.engine',
+                'engine_path': '/home/appuser/spot_ros2/src/ros2_tao_pointpillars/models/trt.fp16.engine',
                 'data_type': 'fp32',
                 'intensity_scale': 255.0,
             }],

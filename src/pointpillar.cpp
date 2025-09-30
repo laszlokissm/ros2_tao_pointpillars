@@ -162,9 +162,12 @@ TRT::TRT(
     // define builder
     auto builder = (nvinfer1::createInferBuilder(gLogger_));
 
-    // define network
-    const auto explicitBatch = 1U << static_cast<uint32_t>(nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH);
-    auto network = (builder->createNetworkV2(explicitBatch));
+    // Suppress deprecation warnings for legacy TensorRT API compatibility
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+    // define network - kEXPLICIT_BATCH is deprecated and default in newer TensorRT
+    auto network = (builder->createNetworkV2(0U));
+    #pragma GCC diagnostic pop
 
     // define onnxparser
     auto parser = (nvonnxparser::createParser(*network, gLogger_));
@@ -179,7 +182,11 @@ TRT::TRT(
     // define config
     auto networkConfig = builder->createBuilderConfig();
     if(data_type == "fp16") {
+        // Suppress deprecation warnings for legacy TensorRT API compatibility
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
         networkConfig->setFlag(nvinfer1::BuilderFlag::kFP16);
+        #pragma GCC diagnostic pop
         std::cout << "Enabled FP16 data type!" << std::endl;
     }
     nvinfer1::Dims dims{};
@@ -197,8 +204,8 @@ TRT::TRT(
     profile->setDimensions("num_points", nvinfer1::OptProfileSelector::kOPT, dims);
     profile->setDimensions("num_points", nvinfer1::OptProfileSelector::kMAX, dims);
     networkConfig->addOptimizationProfile(profile);
-    // set max workspace
-    networkConfig->setMaxWorkspaceSize(size_t(1) << 30);
+    // set max workspace - use newer API
+    networkConfig->setMemoryPoolLimit(nvinfer1::MemoryPoolType::kWORKSPACE, size_t(1) << 30);
 
     engine = (builder->buildEngineWithConfig(*network, *networkConfig));
 
@@ -219,12 +226,12 @@ TRT::TRT(
     }
     trtOut.write((char*)trtModelStream->data(), trtModelStream->size());
     trtOut.close();
-    trtModelStream->destroy();
+    delete trtModelStream;
 
-    networkConfig->destroy();
-    parser->destroy();
-    network->destroy();
-    builder->destroy();
+    delete networkConfig;
+    delete parser;
+    delete network;
+    delete builder;
 #else
     std::cerr << "Error: ONNX parser not available and no cached engine found at: " << modelCache << std::endl;
     std::cerr << "Please provide a pre-built TensorRT engine file or build with ONNX parser support." << std::endl;
