@@ -30,7 +30,8 @@ def generate_launch_description():
                 'engine_path': '/home/appuser/spot_ros2/src/ros2_tao_pointpillars/models/pointpillars_trtexec.engine',
                 'data_type': 'fp16',
                 'intensity_scale': 255.0,
+                'ground_plane_offset': 0.81,  # Adjust this value to align ground plane with z=0
             }],
-            remappings=[('/point_cloud', '/lidar/pointcloud')]
+            remappings=[('/point_cloud', '/spotty/ouster/points'),]
         )
     ])

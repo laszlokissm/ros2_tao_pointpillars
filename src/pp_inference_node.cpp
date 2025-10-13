@@ -80,6 +80,7 @@ public:
     this->declare_parameter<std::string>("engine_path", "");
     this->declare_parameter<std::string>("data_type", "fp16");
     this->declare_parameter<float>("intensity_scale", 1.0);
+    this->declare_parameter<float>("ground_plane_offset", 0.0);
     
 
     rclcpp::Parameter class_names_param = this->get_parameter("class_names");
@@ -90,6 +91,7 @@ public:
     engine_path = this->get_parameter("engine_path").as_string();
     data_type = this->get_parameter("data_type").as_string();
     intensity_scale = this->get_parameter("intensity_scale").as_double();
+    ground_plane_offset = this->get_parameter("ground_plane_offset").as_double();
     
     cudaStream_t stream = NULL;
     pointpillar = new PointPillar(model_path, engine_path, stream, data_type);
@@ -113,6 +115,7 @@ private:
   std::string engine_path;
   std::string data_type;
   float intensity_scale;
+  float ground_plane_offset;
   tf2::Quaternion myQuaternion;
   cudaStream_t stream = NULL;
   PointPillar* pointpillar;  
@@ -142,7 +145,8 @@ private:
       for (const auto& point : pcl_cloud->points) {
         pcl_data.push_back(point.x);
         pcl_data.push_back(point.y);
-        pcl_data.push_back(point.z);
+        // Adjust z-coordinate to compensate for ground plane offset
+        pcl_data.push_back(point.z + ground_plane_offset);
         pcl_data.push_back(point.intensity/intensity_scale);
       }
 
